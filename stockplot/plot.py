@@ -1,98 +1,55 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import indicators
 
-""" Accumulative swing index is currently not working"""
-# def accumulative_swing_index(opens, highs, lows, closes, T=300, ax=None, **kwargs):
-#     """ ASI """
-#     asi = indicators.accumulative_swing_index(opens, highs, lows, closes, T=T)
-#
-#     if ax is None:
-#         plt.plot(asi, **kwargs)
-#     else:
-#         ax.plot(asi, **kwargs)
 
-
-def average_directional_index(highs, lows, closes, start_index=0, end_index=None, ax=None, period=14, **kwargs):
+def average_directional_index(stock_object, ax=None, period=14, **plot_kwargs):
     """ ADX """
-
-    if end_index is None:
-        if start_index - period > 0:
-            highs = highs[start_index - period:]
-            lows = lows[start_index - period:]
-            closes = closes[start_index - period:]
-    else:
-        if start_index - period < 0:
-            highs = highs[:end_index+1]
-            lows = lows[:end_index+1]
-            closes = closes[:end_index+1]
-        else:
-            highs = highs[start_index - period:end_index+1]
-            lows = lows[start_index - period:end_index+1]
-            closes = closes[start_index - period:end_index+1]
-
-    adx = indicators.average_directional_index(highs, lows, closes, period=period)[period:]
+    adx = indicators.average_directional_index(stock_object, period=period)[period:]
 
     if ax is None:
-        plt.plot(adx, **kwargs)
+        plt.plot(adx, label=f'ADX {period}', **plot_kwargs)
     else:
-        ax.plot(adx, **kwargs)
+        ax.plot(adx, label=f'ADX {period}', **plot_kwargs)
 
 
-def average_true_range(highs, lows, closes, ax=None, start_index=0, end_index=None, period=14, method='simple', **kwargs):
-    """ Calculate average true range (ATR) """
-
-    if end_index is None:
-        if start_index - period > 0:
-            highs = highs[start_index - period:]
-            lows = lows[start_index - period:]
-            closes = closes[start_index - period:]
-    else:
-        if start_index - period < 0:
-            highs = highs[:end_index+1]
-            lows = lows[:end_index+1]
-            closes = closes[:end_index+1]
-        else:
-            highs = highs[start_index - period:end_index+1]
-            lows = lows[start_index - period:end_index+1]
-            closes = closes[start_index - period:end_index+1]
-
-    atr = indicators.average_true_range(highs, lows, closes, period=period, method=method)[period:]
+def average_true_range(stock_object, ax=None, period=14, method='simple', **plot_kwargs):
+    """ Calculate ATR """
+    atr = indicators.average_true_range(stock_object, period=period, method=method)[period:]
 
     if ax is None:
-        plt.plot(atr, **kwargs)
+        plt.ylabel("ATR")
+        plt.plot(atr, label=f'ATR ({period})', **plot_kwargs)
     else:
-        ax.plot(atr, **kwargs)
+        ax.set_ylabel("ATR")
+        ax.plot(atr, label=f'ATR ({period})', **plot_kwargs)
 
 
-def bollinger_bands(prices, ax=None, start_index=0, end_index=None, period=20, std_devs=2, upper_band_color='blue',
-    lower_band_color='orange', middle_band_color='black', **kwargs):
+def bollinger_bands(stock_object, ax=None, period=20, std_devs=2, upper_band_color='blue',
+    lower_band_color='orange', middle_band_color='black', **plot_kwargs):
     """ Bollinger Bands """
-
-    if end_index is None:
-        if start_index - period > 0:
-            prices = prices[start_index-period:]
-    else:
-        if start_index - period < 0:
-            prices = prices[:end_index+1]
-        else:
-            prices = prices[start_index-period:end_index+1]
-
-    bands = indicators.bollinger_bands(prices, period=period, std_devs=std_devs)[:,period:]
+    bands = indicators.bollinger_bands(stock_object, period=period, std_devs=std_devs)[:,period:]
 
     if ax is None:
-        plt.plot(bands[0], color=upper_band_color, label=f'Boll. Band - Upper ({period},{std_devs})', **kwargs)
-        plt.plot(bands[1], color=middle_band_color, label=f'SMA ({period})', **kwargs)
-        plt.plot(bands[2], color=lower_band_color, label=f'Boll. Band - Lower ({period},{std_devs})', **kwargs)
+        plt.plot(bands[0], color=upper_band_color, label=f'Boll. Band - Upper ({period},{std_devs})', **plot_kwargs)
+        plt.plot(bands[1], color=middle_band_color, label=f'SMA ({period})', **plot_kwargs)
+        plt.plot(bands[2], color=lower_band_color, label=f'Boll. Band - Lower ({period},{std_devs})', **plot_kwargs)
     else:
-        ax.plot(bands[0], color=upper_band_color, label=f'Boll. Band - Upper ({period},{std_devs})', **kwargs)
-        ax.plot(bands[1], color=middle_band_color, label=f'SMA ({period})', **kwargs)
-        ax.plot(bands[2], color=lower_band_color, label=f'Boll. Band - Lower ({period},{std_devs})', **kwargs)
+        ax.plot(bands[0], color=upper_band_color, label=f'Boll. Band - Upper ({period},{std_devs})', **plot_kwargs)
+        ax.plot(bands[1], color=middle_band_color, label=f'SMA ({period})', **plot_kwargs)
+        ax.plot(bands[2], color=lower_band_color, label=f'Boll. Band - Lower ({period},{std_devs})', **plot_kwargs)
 
 
-def candles(opens, highs, lows, closes, candle_scale=1.0, ax=None, start_index=0, end_index=None, wick_color='black',
-    up_color='green', down_color='red', **kwargs):
+def candles(stock_object, candle_scale=1.0, ax=None, wick_color='black', up_color='green', down_color='red', **vlines_kwargs):
     """ Plot candles """
+    opens = stock_object.opens()
+    highs = stock_object.highs()
+    lows = stock_object.lows()
+    closes = stock_object.closes()
+    start_index = stock_object.start_index
+    end_index = stock_object.end_index
+
     if len(np.unique([len(opens),len(highs),len(lows),len(closes)])) > 1:
         raise ValueError("Arrays containing opens, highs, lows, and closes must have the same length")
 
@@ -101,229 +58,214 @@ def candles(opens, highs, lows, closes, candle_scale=1.0, ax=None, start_index=0
         highs = highs[start_index:end_index+1]
         lows = lows[start_index:end_index+1]
         closes = closes[start_index:end_index+1]
+    else:
+        opens = opens[start_index:]
+        highs = highs[start_index:]
+        lows = lows[start_index:]
+        closes = closes[start_index:]
+
+    price_format = lambda x, pos: str(x).rstrip('0').rstrip('.')
 
     if ax is None:
         for timestep in range(len(opens)):
-            plt.vlines(x=timestep, ymin=lows[timestep], ymax=highs[timestep], colors=wick_color, linewidth=1.5*candle_scale, **kwargs)
+            plt.vlines(x=timestep, ymin=lows[timestep], ymax=highs[timestep], colors=wick_color, linewidth=1.5*candle_scale, **vlines_kwargs)
             if opens[timestep] > closes[timestep]:
-                plt.vlines(x=timestep, ymin=opens[timestep], ymax=closes[timestep], colors=down_color, linewidth=4*candle_scale, **kwargs)
+                plt.vlines(x=timestep, ymin=opens[timestep], ymax=closes[timestep], colors=down_color, linewidth=4*candle_scale, **vlines_kwargs)
             else:
-                plt.vlines(x=timestep, ymin=closes[timestep], ymax=opens[timestep], colors=up_color, linewidth=4*candle_scale, **kwargs)
+                plt.vlines(x=timestep, ymin=closes[timestep], ymax=opens[timestep], colors=up_color, linewidth=4*candle_scale, **vlines_kwargs)
         plt.ylabel("Price ($)")
+        plt.gca().yaxis.set_major_formatter(FuncFormatter(price_format))
     else:
         for timestep in range(len(opens)):
-            ax.vlines(x=timestep, ymin=lows[timestep], ymax=highs[timestep], colors=wick_color, linewidth=1.5*candle_scale, **kwargs)
+            ax.vlines(x=timestep, ymin=lows[timestep], ymax=highs[timestep], colors=wick_color, linewidth=1.5*candle_scale, **vlines_kwargs)
             if opens[timestep] > closes[timestep]:
-                ax.vlines(x=timestep, ymin=opens[timestep], ymax=closes[timestep], colors=down_color, linewidth=4*candle_scale, **kwargs)
+                ax.vlines(x=timestep, ymin=opens[timestep], ymax=closes[timestep], colors=down_color, linewidth=4*candle_scale, **vlines_kwargs)
             else:
-                ax.vlines(x=timestep, ymin=closes[timestep], ymax=opens[timestep], colors=up_color, linewidth=4*candle_scale, **kwargs)
+                ax.vlines(x=timestep, ymin=closes[timestep], ymax=opens[timestep], colors=up_color, linewidth=4*candle_scale, **vlines_kwargs)
         ax.set_ylabel("Price ($)")
+        ax.yaxis.set_major_formatter(FuncFormatter(price_format))
 
 
-def chaikin_volatility(highs, lows, closes, ax=None, start_index=0, end_index=None, ema_period=10, look_back_period=10,
-    hlines_kwargs=dict({}), **kwargs):
-    """ Chaikin Volatility """
-    if end_index is None:
-        if start_index - ema_period - look_back_period > 0:
-            highs = highs[start_index - ema_period - look_back_period:]
-            lows = lows[start_index - ema_period - look_back_period:]
-            closes = closes[start_index - ema_period - look_back_period:]
-    else:
-        if start_index - ema_period - look_back_period < 0:
-            highs = highs[:end_index+1]
-            lows = lows[:end_index+1]
-            closes = closes[:end_index+1]
-        else:
-            highs = highs[start_index - ema_period - look_back_period:end_index+1]
-            lows = lows[start_index - ema_period - look_back_period:end_index+1]
-            closes = closes[start_index - ema_period - look_back_period:end_index+1]
-
-    chaik_vol = indicators.chaikin_volatility(highs, lows, closes, ema_period=ema_period, look_back_period=look_back_period)[ema_period+look_back_period:]
+def chaikin_volatility(stock_object, ax=None, ema_period=10, look_back_period=10,
+    hlines_kwargs=dict({}), **plot_kwargs):
+    """ Chaik. Vol. """
+    chaik_vol = indicators.chaikin_volatility(stock_object, ema_period=ema_period, look_back_period=look_back_period)[ema_period+look_back_period:]
 
     if ax is None:
-        plt.plot(chaik_vol, **kwargs)
+        plt.ylabel("Chaik. Vol.")
+        plt.plot(chaik_vol, label=f'Chaik. Vol. ({ema_period},{look_back_period})', **plot_kwargs)
         plt.hlines(xmin=0, xmax=len(chaik_vol)-1, y=0, color='black', **hlines_kwargs)
     else:
-        ax.plot(chaik_vol, **kwargs)
+        ax.set_ylabel("Chaik. Vol.")
+        ax.plot(chaik_vol, label=f'Chaik. Vol. ({ema_period},{look_back_period})', **plot_kwargs)
         ax.hlines(xmin=0, xmax=len(chaik_vol)-1, y=0, color='black', **hlines_kwargs)
 
 
-def exponential_moving_average(prices, ax=None, start_index=0, end_index=None, period=50, multiplier_numerator=2, **kwargs):
+def exponential_moving_average(stock_object, ax=None, period=50, multiplier_numerator=2, **plot_kwargs):
     """ EMA """
-    if end_index is None:
-        if start_index - period > 0:
-            prices = prices[start_index-period:]
-    else:
-        if start_index - period < 0:
-            prices = prices[:end_index+1]
-        else:
-            prices = prices[start_index-period:end_index+1]
-
-    ema = indicators.exponential_moving_average(prices, period=period, multiplier_numerator=multiplier_numerator)[period:]
+    ema = indicators.exponential_moving_average(stock_object, period=period, multiplier_numerator=multiplier_numerator)[period:]
 
     if ax is None:
-        plt.plot(ema, label=f'EMA ({period})', **kwargs)
+        plt.plot(ema, label=f'EMA ({period})', **plot_kwargs)
     else:
-        ax.plot(ema, label=f'EMA ({period})', **kwargs)
+        ax.plot(ema, label=f'EMA ({period})', **plot_kwargs)
 
 
-def ichimoku_cloud(highs, lows, closes, ax=None, conversion_period=9, base_period=26, span_b_period=52, lagging_period=26, **kwargs):
+def ichimoku_cloud(stock_object, ax=None, conversion_period=9, base_period=26, span_b_period=52, lagging_period=26, span_a_offset=0,
+    span_b_offset=0, conversion_color='black', base_color='red', span_a_color='purple', span_b_color='blue', **plot_kwargs):
     """ Ichimoku Cloud """
-    print("WARNING: This function is incomplete")
-    cloud = indicators.ichimoku_cloud(highs, lows, closes, conversion_period=conversion_period, base_period=base_period,
-                                      span_b_period=span_b_period, lagging_period=lagging_period)
+    cloud = indicators.ichimoku_cloud(stock_object, conversion_period=conversion_period, base_period=base_period,
+        span_b_period=span_b_period, lagging_period=lagging_period, span_a_offset=span_a_offset, span_b_offset=span_b_offset)
 
-    timesteps = np.arange(0, len(highs))
+    timesteps = np.arange(0, len(cloud[0]))
 
     if ax is None:
-        plt.plot(cloud[0], **kwargs)
-        plt.plot(cloud[1], **kwargs)
-        plt.plot(cloud[2], **kwargs)
-        plt.plot(cloud[3], **kwargs)
-        plt.fill_between(timesteps, cloud[1], cloud[3])
+        plt.plot(cloud[0], color=conversion_color, label=f'IC - Conv. Line ({conversion_period})', **plot_kwargs)
+        plt.plot(cloud[1], color=base_color, label=f'IC - Base Line ({base_period})', **plot_kwargs)
+        plt.plot(cloud[2], color=span_a_color, label=f'IC - Span A ({span_a_offset})', **plot_kwargs)
+        plt.plot(cloud[3], color=span_b_color, label=f'IC - Span B ({span_b_period, span_b_offset})', **plot_kwargs)
+        plt.fill_between(timesteps+span_a_offset, cloud[2][span_a_offset:], cloud[3][span_b_offset:], where=cloud[3][span_b_offset:] > cloud[2][span_a_offset:],
+            color='red', alpha=0.4)
+        plt.fill_between(timesteps+span_a_offset, cloud[2][span_a_offset:], cloud[3][span_b_offset:], where=cloud[3][span_b_offset:] < cloud[2][span_a_offset:],
+            color='green', alpha=0.4)
     else:
-        ax.plot(cloud[0], **kwargs)
-        ax.plot(cloud[1], **kwargs)
-        ax.plot(cloud[2], **kwargs)
-        ax.plot(cloud[3], **kwargs)
-        ax.fill_between(timesteps, cloud[1], cloud[3])
+        ax.plot(cloud[0], color=conversion_color, label=f'IC - Conv. Line ({conversion_period})', **plot_kwargs)
+        ax.plot(cloud[1], color=base_color, label=f'IC - Base Line ({base_period})', **plot_kwargs)
+        ax.plot(cloud[2], color=span_a_color, label=f'IC - Span A ({span_a_offset})', **plot_kwargs)
+        ax.plot(cloud[3], color=span_b_color, label=f'IC - Span B ({span_b_period, span_b_offset})', **plot_kwargs)
+        ax.fill_between(timesteps+span_a_offset, cloud[2][span_a_offset:], cloud[3][span_b_offset:], where=cloud[3][span_b_offset:] > cloud[2][span_a_offset:],
+            color='red', alpha=0.4)
+        ax.fill_between(timesteps+span_a_offset, cloud[2][span_a_offset:], cloud[3][span_b_offset:], where=cloud[3][span_b_offset:] < cloud[2][span_a_offset:],
+            color='green', alpha=0.4)
 
 
-def money_flow_index(highs, lows, closes, volumes, ax=None, period=14, **kwargs):
+def money_flow_index(stock_object, ax=None, period=14, **plot_kwargs):
     """ MFI """
-    mfi = indicators.money_flow_index(highs, lows, closes, volumes, period=period)
+    mfi = indicators.money_flow_index(stock_object, period=period)[period+1:]
 
     if ax is None:
-        plt.plot(mfi, **kwargs)
+        plt.ylabel("MFI")
+        plt.plot(mfi, label=f'MFI ({period})', **plot_kwargs)
     else:
-        ax.plot(mfi, **kwargs)
+        ax.set_ylabel("MFI")
+        ax.plot(mfi, label=f'MFI ({period})', **plot_kwargs)
 
 
-def moving_average_convergence_divergence(prices, ax=None, multiplier_numerator=2, **kwargs):
+def moving_average_convergence_divergence(stock_object, ax=None, short_ema=12, long_ema=26,
+    signal_ema=9, multiplier_numerator=2, histogram=True, histogram_up_color='green', histogram_down_color='red',
+    hlines_kwargs=dict({}), vlines_kwargs=dict({}), **plot_kwargs):
     """ MACD """
-    print("WARNING: This function is incomplete")
-    macd = indicators.moving_average_convergence_divergence(prices, multiplier_numerator=multiplier_numerator)
+    macd, signal = indicators.moving_average_convergence_divergence(stock_object,
+        short_ema=short_ema, long_ema=long_ema, signal_ema=signal_ema, multiplier_numerator=multiplier_numerator)
+
+    macd = macd[long_ema+signal_ema:]
+    signal = signal[signal_ema:]
 
     if ax is None:
-        plt.plot(macd, **kwargs)
-        plt.hlines(xmin=0, xmax=len(prices), y=0, colors='black')
+        plt.hlines(xmin=0, xmax=len(macd)-1, y=0, colors='gray', **hlines_kwargs)
+        if histogram is True:
+            for day in range(len(macd)):
+                if macd[day]-signal[day] < 0:
+                    plt.vlines(x=day, ymin=macd[day]-signal[day], ymax=0, color=histogram_down_color, **vlines_kwargs)
+                else:
+                    plt.vlines(x=day, ymin=0, ymax=macd[day]-signal[day], color=histogram_up_color, **vlines_kwargs)
+        plt.ylabel("MACD")
+        plt.plot(macd, label=f'MACD ({short_ema},{long_ema})', **plot_kwargs)
+        plt.plot(signal, label=f'MACD signal ({signal_ema})', color='black', **plot_kwargs)
     else:
-        ax.plot(macd, **kwargs)
-        ax.hlines(xmin=0, xmax=len(prices), y=0, colors='black')
+        ax.hlines(xmin=0, xmax=len(macd)-1, y=0, colors='gray', **hlines_kwargs)
+        if histogram is True:
+            for day in range(len(macd)):
+                if macd[day]-signal[day] < 0:
+                    ax.vlines(x=day, ymin=macd[day]-signal[day], ymax=0, color=histogram_down_color, **vlines_kwargs)
+                else:
+                    ax.vlines(x=day, ymin=0, ymax=macd[day]-signal[day], color=histogram_up_color, **vlines_kwargs)
+        ax.set_ylabel("MACD")
+        ax.plot(macd, label=f'MACD ({short_ema},{long_ema})', **plot_kwargs)
+        ax.plot(signal, label=f'MACD signal ({signal_ema})', color='black', **plot_kwargs)
 
 
-def relative_strength_index(prices, ax=None, start_index=0, end_index=None, period=14, overbought_level=70, oversold_level=30,
-    overbought_color='red', oversold_color='green', hlines_kwargs=dict({}), **kwargs):
-    """ Calculate RSI and add it to the dataset """
-
-    if end_index is None:
-        if start_index - period > 0:
-            prices = prices[start_index-period:]
-    else:
-        if start_index - period < 0:
-            prices = prices[:end_index+1]
-        else:
-            prices = prices[start_index-period:end_index+1]
-
-    rsi = indicators.relative_strength_index(prices, period=period)[period:]
+def relative_strength_index(stock_object, ax=None, period=14, overbought_level=70, oversold_level=30,
+    overbought_color='red', oversold_color='green', hlines_kwargs=dict({}), **plot_kwargs):
+    """ Calculate RSI and add it to the stock_objectset """
+    rsi = indicators.relative_strength_index(stock_object, period=period)[period:]
 
     if ax is None:
-        plt.plot(rsi, label=f'RSI ({period})', **kwargs)
+        plt.plot(rsi, label=f'RSI ({period})', **plot_kwargs)
         plt.hlines(xmin=0, xmax=len(rsi)-1, y=overbought_level, color=overbought_color, **hlines_kwargs)
         plt.hlines(xmin=0, xmax=len(rsi)-1, y=oversold_level, color=oversold_color, **hlines_kwargs)
         plt.ylim(0,100)
-        plt.ylabel(f'RSI ({period})')
+        plt.ylabel('RSI')
         plt.yticks([0,oversold_level,50,overbought_level,100])
     else:
-        ax.plot(rsi, label=f'RSI ({period})', **kwargs)
+        ax.plot(rsi, label=f'RSI ({period})', **plot_kwargs)
         ax.hlines(xmin=0, xmax=len(rsi)-1, y=overbought_level, color=overbought_color, **hlines_kwargs)
         ax.hlines(xmin=0, xmax=len(rsi)-1, y=oversold_level, color=oversold_color, **hlines_kwargs)
         ax.set_ylim(0,100)
-        ax.set_ylabel(f'RSI ({period})')
+        ax.set_ylabel('RSI')
         ax.set_yticks([0,oversold_level,50,overbought_level,100])
 
 
-def simple_moving_average(prices, ax=None, start_index=0, end_index=None, period=50, **kwargs):
+def simple_moving_average(stock_object, ax=None, period=50, **plot_kwargs):
     """ SMA """
-
-    if end_index is None:
-        if start_index - period > 0:
-            prices = prices[start_index-period:]
-    else:
-        if start_index - period < 0:
-            prices = prices[:end_index+1]
-        else:
-            prices = prices[start_index-period:end_index+1]
-
-    sma = indicators.simple_moving_average(prices, period=period)
+    sma = indicators.simple_moving_average(stock_object, period=period)
 
     if ax is None:
-        plt.plot(sma[period:], label=f'SMA ({period})', **kwargs)
+        plt.plot(sma[period:], label=f'SMA ({period})', **plot_kwargs)
     else:
-        ax.plot(sma[period:], label=f'SMA ({period})', **kwargs)
+        ax.plot(sma[period:], label=f'SMA ({period})', **plot_kwargs)
 
 
-def stochastic_oscillator(highs, lows, closes, ax=None, overbought=80, oversold=20, **kwargs):
-    """ Stochastic Oscillator """
-    stoch = indicators.stochastic_oscillator(highs, lows, closes)
+def stochastic_oscillator(stock_object, ax=None, period=14, overbought=80, oversold=20,
+    **plot_kwargs):
+    """ Stoch. Oscil. """
+    stoch = indicators.stochastic_oscillator(stock_object, period=period)[period:]
 
     if ax is None:
-        plt.plot(stoch, **kwargs)
-        plt.hlines(xmin=0, xmax=len(highs), y=overbought, colors='red')
-        plt.hlines(xmin=0, xmax=len(highs), y=oversold, colors='green')
+        plt.ylabel('Stoch. Oscil.')
+        plt.plot(stoch, label=f'Stoch. Oscil. ({period})', **plot_kwargs)
+        plt.hlines(xmin=0, xmax=len(stoch)-1, y=overbought, colors='red')
+        plt.hlines(xmin=0, xmax=len(stoch)-1, y=oversold, colors='green')
         plt.ylim(0,100)
         plt.yticks([0,oversold,50,overbought,100])
     else:
-        ax.plot(stoch, **kwargs)
-        ax.hlines(xmin=0, xmax=len(highs), y=overbought, colors='red')
-        ax.hlines(xmin=0, xmax=len(highs), y=oversold, colors='green')
+        ax.plot(stoch, label=f'Stoch. Oscil. ({period})', **plot_kwargs)
+        ax.hlines(xmin=0, xmax=len(stoch)-1, y=overbought, colors='red')
+        ax.hlines(xmin=0, xmax=len(stoch)-1, y=oversold, colors='green')
+        ax.set_ylabel('Stoch. Oscil.')
         ax.set_ylim(0,100)
         ax.set_yticks([0,oversold,50,overbought,100])
 
 
-""" Swing index is not complete """
-# def swing_index(opens, highs, lows, closes, ax=None, T=300, **kwargs):
-#     """ SI """
-#     si = indicators.swing_index(opens, highs, lows, closes, T=T)
-#
-#     if ax is None:
-#         plt.plot(si, **kwargs)
-#     else:
-#         ax.plot(si, **kwargs)
-
-
-def volume(volumes, ax=None, start_index=0, end_index=None, height_scale=1.0, add_yticks=False, **kwargs):
+def volume(stock_object, ax=None, height_scale=1.0, add_yticks=False, **kwargs):
     """ volume """
-    if end_index is None:
-        volumes = volumes[start_index:]
-    else:
-        volumes = volumes[start_index:end_index+1]
+    volumes = stock_object.volumes()[stock_object.start_index:stock_object.end_index+1]
 
     if ax is None:
-        plt.plot(volumes, **kwargs)
+        plt.plot(volumes, label='Volume', **kwargs)
     else:
         ax2 = ax.twinx()
-        ax2.set_ylim(0, np.max(volumes))
+        ax2.set_ylim(0, np.nanmax(volumes))
         if add_yticks is False:
             ax2.set_yticks([])
             ax2.set_yticklabels([])
         for timestep in range(len(volumes)):
-            ax2.bar(timestep, volumes[timestep]*height_scale/10, **kwargs)
+            ax2.bar(timestep, volumes[timestep]*height_scale/10, color='blue', alpha=0.25, **kwargs)
 
 
-def weighted_moving_average(prices, ax=None, period=50, **kwargs):
+def weighted_moving_average(stock_object, ax=None, period=50, **plot_kwargs):
     """ WMA """
-    wma = indicators.weighted_moving_average(prices, period=period)
+    wma = indicators.weighted_moving_average(stock_object, period=period)
 
     if ax is None:
-        plt.plot(wma, **kwargs)
+        plt.plot(wma, label=f'WMA ({period})', **plot_kwargs)
     else:
-        ax.plot(wma, **kwargs)
+        ax.plot(wma, label=f'WMA ({period})', **plot_kwargs)
 
 
-def xticks(dates, period='D', ax=None, **kwargs):
+def xticks(stock_object, period='D', ax=None, **kwargs):
     """ xticks """
-    dates = np.array(dates, dtype=f'datetime64[{period}]')
+    dates = np.array(stock_object.dates()[stock_object.start_index:stock_object.end_index], dtype=f'datetime64[{period}]')
     uniques = np.unique(dates)
     unique_index_array = np.empty([len(uniques)],dtype=int)
     for index in range(len(unique_index_array)):
