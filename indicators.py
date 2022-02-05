@@ -1,43 +1,32 @@
 """ Technical indicators to plot """
 
 import numpy as np
+from utils import Stock
 
 
-def accumulative_swing_index(opens, highs, lows, closes, T=300):
-    """ ASI """
-    print("WARNING: accumulative_swing_index is experimental and may result in incorrect values")
-    array_length = len(closes)
-    asi_array = np.empty(array_length)
-    asi = 0
-
-    for day in range(1,array_length):
-        C, Cy = closes[day], closes[day-1]
-        H, Hy = highs[day], highs[day-1]
-        L, Ly = lows[day], lows[day-1]
-        O, Oy = opens[day], opens[day-1]
-        K = np.max((H-Cy, Cy-L))
-        TR = np.max((H-Cy,Cy-L,H-L))
-        if Cy > H:
-            ER = abs(H-Cy)
-        elif L <= Cy <= H:
-            ER = 0
-        else:
-            ER = abs(Cy-L)
-        SH = abs(Cy-Oy)
-
-        R = TR - (0.5*ER) + (0.25*SH)
-        si_test = 50*((C-Cy + ((C-O)/2) + ((Cy-Oy)/4))/R)*(K/T)
-        if si_test < 1000:
-            si = 50*((C-Cy + ((C-O)/2) + ((Cy-Oy)/4))/R)*(K/T)
-        asi += si
-        asi_array[day] = asi
-
-        return asi_array
-
-
-def average_directional_index(highs, lows, closes, period=14):
+def average_directional_index(data, period=14):
     """ ADX """
-    print("WARNING: average_directional_index is experimental and may result in incorrect values")
+    print("WARNING: Average directional index (ADX) is experimental and returned values may be incorrect.")
+    highs = data.highs()
+    lows = data.lows()
+    closes = data.closes()
+    start_index = data.start_index
+    end_index = data.end_index
+    if end_index is None:
+        if start_index - period > 0:
+            highs = highs[start_index - period:]
+            lows = lows[start_index - period:]
+            closes = closes[start_index - period:]
+    else:
+        if start_index - period < 0:
+            highs = highs[:end_index+1]
+            lows = lows[:end_index+1]
+            closes = closes[:end_index+1]
+        else:
+            highs = highs[start_index - period:end_index+1]
+            lows = lows[start_index - period:end_index+1]
+            closes = closes[start_index - period:end_index+1]
+
     array_length = len(closes)
 
     dx_array = np.empty(array_length)
@@ -86,8 +75,28 @@ def average_directional_index(highs, lows, closes, period=14):
     return adx_array
 
 
-def average_true_range(highs, lows, closes, period=14, method='simple'):
+def average_true_range(data, period=14, method='simple'):
     """ Calculate average true range (ATR) """
+    highs = data.highs()
+    lows = data.lows()
+    closes = data.closes()
+    start_index = data.start_index
+    end_index = data.end_index
+
+    if end_index is None:
+        if start_index - period > 0:
+            highs = highs[start_index - period:]
+            lows = lows[start_index - period:]
+            closes = closes[start_index - period:]
+    else:
+        if start_index - period < 0:
+            highs = highs[:end_index+1]
+            lows = lows[:end_index+1]
+            closes = closes[:end_index+1]
+        else:
+            highs = highs[start_index - period:end_index+1]
+            lows = lows[start_index - period:end_index+1]
+            closes = closes[start_index - period:end_index+1]
 
     array_length = len(closes)
     tr_array = np.empty(array_length)
@@ -120,8 +129,32 @@ def average_true_range(highs, lows, closes, period=14, method='simple'):
     return atr_array
 
 
-def bollinger_bands(prices, period=20, std_devs=2):
+def bollinger_bands(data, price='close', period=20, std_devs=2):
     """ Bollinger Bands """
+    if price == 'open':
+        prices = data.opens()
+    elif price == 'high':
+        prices = data.highs()
+    elif price == 'low':
+        prices = data.lows()
+    elif price == 'close':
+        prices = data.closes()
+    elif price is not None:
+        raise ValueError("Invalid price, available options are: 'open', 'high', 'low', 'close'")
+    else:
+        prices = data
+
+    start_index = data.start_index
+    end_index = data.end_index
+
+    if end_index is None:
+        if start_index - period > 0:
+            prices = prices[start_index-period:]
+    else:
+        if start_index - period < 0:
+            prices = prices[:end_index+1]
+        else:
+            prices = prices[start_index-period:end_index+1]
 
     array_length = len(prices)
 
@@ -145,8 +178,27 @@ def bollinger_bands(prices, period=20, std_devs=2):
     return bands
 
 
-def chaikin_volatility(highs, lows, closes, ema_period=10, look_back_period=10):
+def chaikin_volatility(data, ema_period=10, look_back_period=10):
     """ Chaikin Volatility """
+    highs = data.highs()
+    lows = data.lows()
+    closes = data.closes()
+    start_index = data.start_index
+    end_index = data.end_index
+    if end_index is None:
+        if start_index - ema_period - look_back_period > 0:
+            highs = highs[start_index - ema_period - look_back_period:]
+            lows = lows[start_index - ema_period - look_back_period:]
+            closes = closes[start_index - ema_period - look_back_period:]
+    else:
+        if start_index - ema_period - look_back_period < 0:
+            highs = highs[:end_index+1]
+            lows = lows[:end_index+1]
+            closes = closes[:end_index+1]
+        else:
+            highs = highs[start_index - ema_period - look_back_period:end_index+1]
+            lows = lows[start_index - ema_period - look_back_period:end_index+1]
+            closes = closes[start_index - ema_period - look_back_period:end_index+1]
 
     array_length = len(closes)
 
@@ -169,8 +221,34 @@ def chaikin_volatility(highs, lows, closes, ema_period=10, look_back_period=10):
     return chaik_array
 
 
-def exponential_moving_average(prices, period=50, multiplier_numerator=2):
+def exponential_moving_average(data, price='close', period=50, multiplier_numerator=2):
     """ EMA """
+    if type(data) == Stock:
+        start_index = data.start_index
+        end_index = data.end_index
+        if price == 'open':
+            prices = data.opens()
+        elif price == 'high':
+            prices = data.highs()
+        elif price == 'low':
+            prices = data.lows()
+        elif price == 'close':
+            prices = data.closes()
+        else:
+            raise ValueError("Invalid price, available options are: 'open', 'high', 'low', 'close'")
+    else:
+        prices = data
+        start_index, end_index = 0, None
+
+    if end_index is None:
+        if start_index - period > 0:
+            prices = prices[start_index-period:]
+    else:
+        if start_index - period < 0:
+            prices = prices[:end_index+1]
+        else:
+            prices = prices[start_index-period:end_index+1]
+
     array_length = len(prices)
     ema_array = np.empty(array_length)
     ema_array[:period] = np.NaN
@@ -186,35 +264,65 @@ def exponential_moving_average(prices, period=50, multiplier_numerator=2):
     return ema_array
 
 
-def ichimoku_cloud(highs, lows, closes, conversion_period=9, base_period=26, span_b_period=52, lagging_period=26):
+def ichimoku_cloud(data, conversion_period=9, base_period=26, span_b_period=52, lagging_period=26, span_a_offset=26,
+    span_b_offset=26):
+    print("WARNING: Ichimoku cloud functions are incomplete and some features are not functional.")
     """ Ichimoku Cloud """
+    highs = data.highs()[data.start_index:data.end_index+1]
+    lows = data.lows()[data.start_index:data.end_index+1]
+    closes = data.closes()[data.start_index:data.end_index+1]
+
+    start_period = int(np.max((conversion_period, base_period, span_b_period, lagging_period)))
+
     array_length = len(closes)
 
     conversion_line_array = np.empty(array_length)
     base_line_array = np.empty(array_length)
-    leading_span_a_array = np.empty(array_length)
-    leading_span_b_array = np.empty(array_length)
-
-    start_period = int(np.max((conversion_period, base_period, span_b_period, lagging_period)))
+    leading_span_a_array = np.empty(array_length + span_a_offset)
+    leading_span_b_array = np.empty(array_length + span_b_offset)
 
     conversion_line_array[:start_period] = np.NaN
     base_line_array[:start_period] = np.NaN
     leading_span_a_array[:start_period] = np.NaN
     leading_span_b_array[:start_period] = np.NaN
 
-    for day in range(start_period, array_length):
+    for day in range(0, array_length):
         conversion_line_array[day] = (np.mean(highs[day-conversion_period+1:day+1])+np.mean(lows[day-conversion_period+1:day+1]))/2
         base_line_array[day] = (np.mean(highs[day-base_period+1:day+1])+np.mean(lows[day-base_period+1:day+1]))/2
-        leading_span_a_array[day] = (conversion_line_array[day] + base_line_array[day])/2
-        leading_span_b_array[day] = (np.mean(highs[day-span_b_period+1:day+1])+np.mean(lows[day-span_b_period+1:day+1]))/2
+        leading_span_a_array[day + span_a_offset] = (conversion_line_array[day] + base_line_array[day])/2
+        leading_span_b_array[day + span_b_offset] = (np.mean(highs[day-span_b_period+1:day+1])+np.mean(lows[day-span_b_period+1:day+1]))/2
 
-    cloud = np.array([conversion_line_array, base_line_array, leading_span_a_array, leading_span_b_array])
+    cloud = [conversion_line_array, base_line_array, leading_span_a_array, leading_span_b_array]
 
     return cloud
 
 
-def money_flow_index(highs, lows, closes, volumes, period=14):
+def money_flow_index(data, period=14):
     """ MFI """
+    highs = data.highs()
+    lows = data.lows()
+    closes = data.closes()
+    volumes = data.volumes()
+    start_index = data.start_index
+    end_index = data.end_index
+    if end_index is None:
+        if start_index - period > 0:
+            highs = highs[start_index - period:]
+            lows = lows[start_index - period:]
+            closes = closes[start_index - period:]
+            volumes = volumes[start_index - period:]
+    else:
+        if start_index - period < 0:
+            highs = highs[:end_index+1]
+            lows = lows[:end_index+1]
+            closes = closes[:end_index+1]
+            volumes = volumes[:end_index+1]
+        else:
+            highs = highs[start_index - period:end_index+1]
+            lows = lows[start_index - period:end_index+1]
+            closes = closes[start_index - period:end_index+1]
+            volumes = volumes[start_index - period:end_index+1]
+
     typical_prices = (highs + lows + closes)/3
 
     array_length = len(closes)
@@ -238,29 +346,81 @@ def money_flow_index(highs, lows, closes, volumes, period=14):
     return mfi_array
 
 
-def moving_average_convergence_divergence(prices, multiplier_numerator=2):
+def moving_average_convergence_divergence(data, price='close', short_ema=12, long_ema=26, signal_ema=9, multiplier_numerator=2):
     """ MACD """
+    if short_ema >= long_ema:
+        raise ValueError("short_ema period must be smaller than the long_ema period")
+
+    if type(data) == Stock:
+        start_index = data.start_index
+        end_index = data.end_index
+        if price == 'open':
+            prices = data.opens()
+        elif price == 'high':
+            prices = data.highs()
+        elif price == 'low':
+            prices = data.lows()
+        elif price == 'close':
+            prices = data.closes()
+        else:
+            raise ValueError("Invalid price, available options are: 'open', 'high', 'low', 'close'")
+    else:
+        prices = data
+        start_index, end_index = None, None
+
+    if end_index is None:
+        if start_index - long_ema - signal_ema > 0:
+            prices = prices[start_index-long_ema:]
+    else:
+        if start_index - long_ema - signal_ema < 0:
+            prices = prices[:end_index+1]
+        else:
+            prices = prices[start_index-long_ema-signal_ema:end_index+1]
 
     array_length = len(prices)
     macd_array = np.empty(array_length)
 
-    macd_array[:26] = np.NaN
+    macd_array[:long_ema] = np.NaN
 
-    ema12 = np.mean(prices[14:26])
-    ema12_multiplier = multiplier_numerator/(12+1)
-    ema26 = np.mean(prices[0:26])
-    ema26_multiplier = multiplier_numerator/(26+1)
+    ema_short = np.mean(prices[long_ema-short_ema:long_ema])
+    ema_short_multiplier = multiplier_numerator/(short_ema+1)
+    ema_long = np.mean(prices[:long_ema])
+    ema_long_multiplier = multiplier_numerator/(long_ema+1)
 
-    for day in range(26, array_length):
-        ema12 = prices[day]*ema12_multiplier + ema12*(1-ema12_multiplier)
-        ema26 = prices[day]*ema26_multiplier + ema26*(1-ema26_multiplier)
-        macd_array[day] = ema12 - ema26
+    for day in range(long_ema, array_length):
+        ema_short = prices[day]*ema_short_multiplier + ema_short*(1-ema_short_multiplier)
+        ema_long = prices[day]*ema_long_multiplier + ema_long*(1-ema_long_multiplier)
+        macd_array[day] = ema_short - ema_long
 
-    return macd_array
+    signal_line = exponential_moving_average(macd_array[long_ema:], period=signal_ema)
+
+    return macd_array, signal_line
 
 
-def relative_strength_index(prices, period=14):
+def relative_strength_index(data, price='close', period=14):
     """ Calculate RSI and add it to the dataset """
+    if price == 'open':
+        prices = data.opens()
+    elif price == 'high':
+        prices = data.highs()
+    elif price == 'low':
+        prices = data.lows()
+    elif price == 'close':
+        prices = data.closes()
+    else:
+        raise ValueError("Invalid price, available options are: 'open', 'high', 'low', 'close'")
+
+    start_index = data.start_index
+    end_index = data.end_index
+
+    if end_index is None:
+        if start_index - period > 0:
+            prices = prices[start_index-period:]
+    else:
+        if start_index - period < 0:
+            prices = prices[:end_index+1]
+        else:
+            prices = prices[start_index-period:end_index+1]
 
     array_length = len(prices)
     change_array = np.empty(array_length)
@@ -289,8 +449,30 @@ def relative_strength_index(prices, period=14):
     return rsi_array
 
 
-def simple_moving_average(prices, period=50):
+def simple_moving_average(data, price='close', period=50):
     """ SMA """
+    if price == 'open':
+        prices = data.opens()
+    elif price == 'high':
+        prices = data.highs()
+    elif price == 'low':
+        prices = data.lows()
+    elif price == 'close':
+        prices = data.closes()
+    else:
+        raise ValueError("Invalid price, available options are: 'open', 'high', 'low', 'close'")
+
+    start_index = data.start_index
+    end_index = data.end_index
+
+    if end_index is None:
+        if start_index - period > 0:
+            prices = prices[start_index-period:]
+    else:
+        if start_index - period < 0:
+            prices = prices[:end_index+1]
+        else:
+            prices = prices[start_index-period:end_index+1]
 
     array_length = len(prices)
     sma_array = np.empty(array_length)
@@ -304,8 +486,27 @@ def simple_moving_average(prices, period=50):
     return sma_array
 
 
-def stochastic_oscillator(highs, lows, closes, period=14):
+def stochastic_oscillator(data, period=14):
     """ Stochastic Oscillator """
+    highs = data.highs()
+    lows = data.lows()
+    closes = data.closes()
+    start_index = data.start_index
+    end_index = data.end_index
+    if end_index is None:
+        if start_index - period > 0:
+            highs = highs[start_index - period:]
+            lows = lows[start_index - period:]
+            closes = closes[start_index - period:]
+    else:
+        if start_index - period < 0:
+            highs = highs[:end_index+1]
+            lows = lows[:end_index+1]
+            closes = closes[:end_index+1]
+        else:
+            highs = highs[start_index - period:end_index+1]
+            lows = lows[start_index - period:end_index+1]
+            closes = closes[start_index - period:end_index+1]
 
     array_length = len(closes)
     stoch_array = np.empty(len(closes))
@@ -321,39 +522,30 @@ def stochastic_oscillator(highs, lows, closes, period=14):
     return stoch_array
 
 
-def swing_index(opens, highs, lows, closes, T=300):
-    """ SI """
-
-    array_length = len(closes)
-    si_array = np.empty(array_length)
-    si = 0
-
-    for day in range(1,array_length):
-        C, Cy = closes[day], closes[day-1]
-        H, Hy = highs[day], highs[day-1]
-        L, Ly = lows[day], lows[day-1]
-        O, Oy = opens[day], opens[day-1]
-        K = np.max((H-Cy, Cy-L))
-        TR = np.max((H-Cy,Cy-L,H-L))
-        if Cy > H:
-            ER = abs(H-Cy)
-        elif L <= Cy <= H:
-            ER = 0
-        else:
-            ER = abs(Cy-L)
-        SH = abs(Cy-Oy)
-
-        R = TR - (0.5*ER) + (0.25*SH)
-        si_test = 50*((C-Cy + ((C-O)/2) + ((Cy-Oy)/4))/R)*(K/T)
-        if si_test < 1000:
-            si = 50*((C-Cy + ((C-O)/2) + ((Cy-Oy)/4))/R)*(K/T)
-        si_array[day] = si
-
-        return si_array
-
-
-def weighted_moving_average(prices, period=50):
+def weighted_moving_average(data, price='close', period=50):
     """ WMA """
+    if price == 'open':
+        prices = data.opens()
+    elif price == 'high':
+        prices = data.highs()
+    elif price == 'low':
+        prices = data.lows()
+    elif price == 'close':
+        prices = data.closes()
+    else:
+        raise ValueError("Invalid price, available options are: 'open', 'high', 'low', 'close'")
+
+    start_index = data.start_index
+    end_index = data.end_index
+
+    if end_index is None:
+        if start_index - period > 0:
+            prices = prices[start_index-period:]
+    else:
+        if start_index - period < 0:
+            prices = prices[:end_index+1]
+        else:
+            prices = prices[start_index-period:end_index+1]
 
     array_length = len(prices)
     wma_array = np.empty(array_length)
