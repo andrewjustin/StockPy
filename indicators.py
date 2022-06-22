@@ -266,7 +266,6 @@ def exponential_moving_average(data, price='close', period=50, multiplier_numera
 
 def ichimoku_cloud(data, conversion_period=9, base_period=26, span_b_period=52, lagging_period=26, span_a_offset=26,
     span_b_offset=26):
-    print("WARNING: Ichimoku cloud functions are incomplete and some features are not functional.")
     """ Ichimoku Cloud """
     highs = data.highs()[data.start_index:data.end_index+1]
     lows = data.lows()[data.start_index:data.end_index+1]
